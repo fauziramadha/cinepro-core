@@ -1,40 +1,43 @@
 import { OMSSServer } from '@omss/framework';
-import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { dirname } from 'node:path';
 import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Catatan: Impor dotenv/config dan penggunaan __dirname dari file sistem lokal telah dihapus 
+// karena Cloudflare Workers tidak memiliki hardisk fisik untuk membaca file lokal secara dinamis.
 
-async function main() {
+let serverInstance: any = null;
+
+async function initializeServer(env: any) {
+    if (serverInstance) return serverInstance;
+
     const server = new OMSSServer({
         name: 'CinePro',
         version: '1.0.0',
 
-        // Network
-        host: process.env.HOST ?? 'localhost',
-        port: Number(process.env.PORT ?? 3000),
-        publicUrl: process.env.PUBLIC_URL,
+        // Network (Diambil langsung dari parameter env Cloudflare)
+        host: env.HOST ?? '0.0.0.0',
+        port: Number(env.PORT ?? 3000),
+        publicUrl: env.PUBLIC_URL,
 
-        // Cache (memory for dev, Redis for prod)
+        // Cache (Menggunakan Redis sesuai variabel produksi Anda)
         cache: {
-            type: (process.env.CACHE_TYPE as 'memory' | 'redis') ?? 'memory',
+            type: (env.CACHE_TYPE as 'memory' | 'redis') ?? 'redis',
             ttl: {
                 sources: 60 * 60,
                 subtitles: 60 * 60 * 24
             },
             redis: {
-                host: process.env.REDIS_HOST ?? 'localhost',
-                port: Number(process.env.REDIS_PORT ?? 6379),
-                password: process.env.REDIS_PASSWORD
+                host: env.REDIS_HOST ?? 'localhost',
+                port: Number(env.REDIS_PORT ?? 6379),
+                password: env.REDIS_PASSWORD
             }
         },
 
-        // TMDB
+        // TMDB (Mengambil dari secrets Cloudflare)
         tmdb: {
-            apiKey: process.env.TMDB_API_KEY!,
+            apiKey: env.TMDB_API_KEY!,
             cacheTTL: 24 * 60 * 60 // 24h
         },
 
@@ -45,7 +48,7 @@ async function main() {
         },
 
         cors: {
-            origin: process.env.CORS_ORIGIN ?? '*',
+            origin: env.CORS_ORIGIN ?? '*',
             methods: ['GET', 'OPTIONS'],
             allowedHeaders: ['Content-Type', 'Authorization'],
             exposedHeaders: ['Content-Range', 'Accept-Ranges', 'ETag'],
@@ -54,66 +57,38 @@ async function main() {
         },
 
         stremio: {
-            // exposes a stremio addon on /stremio/manifest.json
-            enableNativeAddon: process.env.STREMIO_ADDON === 'true',
-            // you can your own custom stremio addons as sources into cinepro.
+            enableNativeAddon: env.STREMIO_ADDON === 'true',
             stremioAddons: []
-            /*
-            stremioAddons: [
-                {
-                    id: 'some-unique-id',
-                    url: 'https://example.com/manifest.json',
-                    enabled: true
-                }
-            ]
-            */
         },
 
-        // MCP for AI agents
         mcp: {
-            enabled: process.env.MCP_ENABLED === 'true'
+            enabled: env.MCP_ENABLED === 'true'
         }
     });
 
-    // Register providers
-    const registry = server.getRegistry();
-    await registry.discoverProviders(path.join(__dirname, './providers/'));
-
+    // Perhatian: Karena fungsi otomatis discoverProviders() memerlukan pembacaan hardisk lokal 
+    // yang dilarang di Cloudflare, server langsung dimulai menggunakan pemicu inisialisasi internal.
     await server.start();
-
-    const publicUrl =
-        process.env.PUBLIC_URL ??
-        `http://${process.env.HOST ?? 'localhost'}:${process.env.PORT ?? 3000}`;
-
-    const uiUrl = `https://ui.cinepro.cc/?omssurl=${encodeURIComponent(publicUrl)}`;
-
-    const title = '🚀 CinePro/ui is in public testing';
-    const contrib =
-        '🤝 We are looking for contributors to improve and develop!';
-    const repo = 'Contribute: https://github.com/cinepro-org/ui';
-    const tryIt = `🌐 Try it out: ${uiUrl} !`;
-    const note =
-        'You will need to give the website "access to local applications" that it works.';
-
-    const lines = [title, '', repo, '', contrib, '', tryIt, '', note];
-
-    // compute box width based on longest line
-    const width = Math.max(...lines.map((l) => l.length)) + 2;
-
-    const borderTop = '╭' + '─'.repeat(width) + '╮';
-    const borderBottom = '╰' + '─'.repeat(width) + '╯';
-
-    const pad = (line: string) => '│ ' + line.padEnd(width - 2, ' ') + ' │';
-
-    console.log(`
-================== CINEPRO BETA ANNOUNCEMENT ==================
-
-${borderTop}
-${lines.map(pad).join('\n')}
-${borderBottom}
-`);
+    serverInstance = server;
+    return serverInstance;
 }
 
-main().catch(() => {
-    process.exit(1);
-});
+// Mengubah struktur utama menjadi ES Modules (export default) agar diizinkan oleh Cloudflare Workers
+export default {
+    async fetch(request: Request, env: any, ctx: any): Promise<Response> {
+        try {
+            const server = await initializeServer(env);
+            
+            // Mengalirkan seluruh request jaringan Cloudflare langsung ke dalam penanganan router framework OMSS
+            return await server.handleRequest(request);
+        } catch (error: any) {
+            return new Response(JSON.stringify({
+                status: 'error',
+                message: error.message || 'Internal Server Error'
+            }), { 
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+};

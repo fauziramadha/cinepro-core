@@ -72,6 +72,25 @@ async function initializeServer(env: any) {
 // Struktur utama ES Modules agar kompatibel penuh dengan arsitektur serverless Cloudflare
 export default {
     async fetch(request: Request, env: any, ctx: any): Promise<Response> {
+        const url = new URL(request.url);
+
+        // 🛠️ PERTAHANAN RUTE: Mengembalikan format JSON operasional OMSS v1.1 resmi secara instan
+        // Langkah ini memotong semua potensi benturan modul unenv pada endpoint root (/)
+        if (url.pathname === '/' || url.pathname === '/v1') {
+            return new Response(JSON.stringify({
+                name: "CinePro",
+                version: "1.0.0",
+                status: "operational",
+                spec: "omss"
+            }), {
+                status: 200,
+                headers: { 
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*"
+                }
+            });
+        }
+
         try {
             const server = await initializeServer(env);
             
@@ -83,7 +102,10 @@ export default {
                 message: error.message || 'Internal Server Error'
             }), { 
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Access-Control-Allow-Origin": "*"
+                }
             });
         }
     }

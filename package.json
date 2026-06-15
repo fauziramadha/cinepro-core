@@ -4,10 +4,10 @@
     "type": "module",
     "scripts": {
         "dev": "wrangler dev",
-        "build": "tsc",
-        "start": "npm run build && wrangler publish",
-        "deploy": "npm run build && wrangler deploy",
-        "preview": "npm run build && wrangler publish --dry-run",
+        "build": "wrangler deploy --dry-run --outdir dist",
+        "start": "wrangler deploy",
+        "deploy": "wrangler deploy",
+        "preview": "wrangler deploy --dry-run",
         "format": "prettier --write src",
         "clean": "rimraf dist",
         "lint": "tsc --noEmit"

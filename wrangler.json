@@ -1,13 +1,10 @@
 {
   "name": "cinepro-core",
-  "main": "dist/server.js",
+  "main": "src/server.ts",
   "compatibility_date": "2026-05-24",
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "build": {
-    "command": "npm install && npm run build"
-  },
   "workers_dev": true,
   "observability": {
     "enabled": true

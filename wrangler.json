@@ -1,5 +1,5 @@
 {
-  "name": "cinepro-core",
+  "name": "cinepro-corez",
   "main": "src/server.ts",
   "compatibility_date": "2026-05-24",
   "compatibility_flags": [

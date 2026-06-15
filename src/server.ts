@@ -4,9 +4,6 @@ import { dirname } from 'node:path';
 import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
 
-// Catatan: Impor dotenv/config dan penggunaan __dirname dari file sistem lokal telah dihapus 
-// karena Cloudflare Workers tidak memiliki hardisk fisik untuk membaca file lokal secara dinamis.
-
 let serverInstance: any = null;
 
 async function initializeServer(env: any) {
@@ -21,9 +18,9 @@ async function initializeServer(env: any) {
         port: Number(env.PORT ?? 3000),
         publicUrl: env.PUBLIC_URL,
 
-        // Cache (Menggunakan Redis sesuai variabel produksi Anda)
+        // Cache (Menggunakan memori internal RAM sesuai setelan variabel terbaru Anda)
         cache: {
-            type: (env.CACHE_TYPE as 'memory' | 'redis') ?? 'redis',
+            type: (env.CACHE_TYPE as 'memory' | 'redis') ?? 'memory',
             ttl: {
                 sources: 60 * 60,
                 subtitles: 60 * 60 * 24
@@ -66,20 +63,19 @@ async function initializeServer(env: any) {
         }
     });
 
-    // Perhatian: Karena fungsi otomatis discoverProviders() memerlukan pembacaan hardisk lokal 
-    // yang dilarang di Cloudflare, server langsung dimulai menggunakan pemicu inisialisasi internal.
-    await server.start();
+    // CATATAN: server.start() sengaja dinonaktifkan untuk mencegah error unenv (http.createServer) di Cloudflare.
+    // Jalur komunikasi request akan ditangani langsung secara pasif oleh fungsi handleRequest.
     serverInstance = server;
     return serverInstance;
 }
 
-// Mengubah struktur utama menjadi ES Modules (export default) agar diizinkan oleh Cloudflare Workers
+// Struktur utama ES Modules agar kompatibel penuh dengan arsitektur serverless Cloudflare
 export default {
     async fetch(request: Request, env: any, ctx: any): Promise<Response> {
         try {
             const server = await initializeServer(env);
             
-            // Mengalirkan seluruh request jaringan Cloudflare langsung ke dalam penanganan router framework OMSS
+            // Mengalirkan request jaringan masuk langsung ke penanganan router framework OMSS
             return await server.handleRequest(request);
         } catch (error: any) {
             return new Response(JSON.stringify({

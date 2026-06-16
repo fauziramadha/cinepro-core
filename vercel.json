@@ -2,26 +2,22 @@
   "version": 2,
   "builds": [
     {
-      "src": "dist/server.js",
+      "src": "src/server.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "^/assets/(.*)",
+      "src": "/assets/(.*)",
       "dest": "/assets/$1"
     },
     {
-      "src": "^/static/(.*)",
+      "src": "/static/(.*)",
       "dest": "/static/$1"
     },
     {
-      "src": ".*\\.(css|js|png|jpg|jpeg|gif|svg|ico|json|html)$",
-      "dest": "$0"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/dist/server.js"
+      "dest": "src/server.ts"
     }
   ],
   "env": {

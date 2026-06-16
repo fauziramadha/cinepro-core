@@ -1,9 +1,9 @@
 {
     "compilerOptions": {
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
         "target": "ES2022",
-        "module": "ES2022",
-        "moduleResolution": "Bundler",
-        "lib": ["ES2022", "dom"],
+        "lib": ["ES2022"],
         "outDir": "./dist",
         "rootDir": "./src",
         "strict": true,
@@ -13,9 +13,7 @@
         "resolveJsonModule": true,
         "declaration": true,
         "sourceMap": true,
-        "noEmit": false,
-        "allowSyntheticDefaultImports": true,
-        "types": ["@cloudflare/workers-types", "node"]
+        "noEmit": false
     },
     "ts-node": {
         "esm": true

@@ -122,7 +122,7 @@ PolyForm Noncommercial License 1.0.0 © CinePro Organization — see [LICENSE](L
 
 This software does not host, store, or distribute copyrighted content.
 
-Any DMCA complaints should be directed to the hosting provider, not to us.
+Any DMCA complaints should be directed to the hosting provider, .not to us.
 
 [Read more here](https://docs.cinepro.cc/core/general-information/license)
 

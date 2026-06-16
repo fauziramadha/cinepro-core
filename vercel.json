@@ -8,6 +8,18 @@
   ],
   "routes": [
     {
+      "src": "^/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "^/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": ".*\\.(css|js|png|jpg|jpeg|gif|svg|ico|json|html)$",
+      "dest": "$0"
+    },
+    {
       "src": "/(.*)",
       "dest": "/dist/server.js"
     }
